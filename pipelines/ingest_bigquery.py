@@ -30,7 +30,8 @@ def create_external_table(
     table = client.create_table(table, exists_ok=True)
 
     print(f"External table created: {table.full_table_id}")
-    return table.full_table_id
+    # full_table_id uses colon (project:dataset.table), but SQL needs dots
+    return table.full_table_id.replace(":", ".")
 
 
 @task
