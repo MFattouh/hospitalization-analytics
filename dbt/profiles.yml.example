@@ -6,7 +6,7 @@ hospital:
       method: service-account
       keyfile: "/path/to/your/service-account.json"
       project: "your-gcp-project-id"
-      dataset: staging
+      dataset: raw
       threads: 4
       timeout_seconds: 300
       location: US
