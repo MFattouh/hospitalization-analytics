@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.git/
+.superpowers/
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+.terraform/
+*.tfstate

@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials
+*.json
+!dbt/profiles.yml.example
+terraform/*.tfvars
+credentials/
+
+# Prefect
+.prefectignore
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+
+# Superpowers brainstorming
+.superpowers/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
