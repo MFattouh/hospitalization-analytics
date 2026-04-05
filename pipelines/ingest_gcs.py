@@ -1,27 +1,28 @@
-"""DAG 1: Download CSVs from source URLs and upload to GCS datalake."""
+"""DAG 1: Download CSVs from Kaggle and upload to GCS datalake."""
 
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import requests
+import kagglehub
 from google.cloud import storage
 from prefect import flow, task
 
-PATIENTS_URL = "https://storage.googleapis.com/kagglesdsdata/datasets/8395374/13249373/patients.csv"
-SERVICES_URL = "https://storage.googleapis.com/kagglesdsdata/datasets/8395374/13249373/services_weekly.csv"
+KAGGLE_DATASET = "jaderz/hospital-beds-management"
 
 GCS_BUCKET = os.getenv("GCS_BUCKET", "hospital-datalake")
 GCS_PREFIX = "raw"
 
 
 @task(retries=2, retry_delay_seconds=10)
-def download_csv(url: str, dest_path: Path) -> Path:
-    """Download a CSV file from a URL to a local path."""
-    response = requests.get(url, timeout=120)
-    response.raise_for_status()
-    dest_path.write_bytes(response.content)
-    return dest_path
+def download_from_kaggle(dataset_handle: str, output_dir: Path) -> Path:
+    """Download a Kaggle dataset to a local directory."""
+    download_path = kagglehub.dataset_download(
+        dataset_handle,
+        output_dir=str(output_dir),
+        force_download=True,
+    )
+    return Path(download_path)
 
 
 @task
@@ -38,18 +39,20 @@ def upload_to_gcs(file_path: Path, bucket_name: str, blob_name: str) -> str:
 def ingest_gcs(
     gcs_bucket: str = GCS_BUCKET,
 ) -> dict[str, str]:
-    """Download hospital data CSVs and upload to GCS datalake."""
+    """Download hospital data CSVs from Kaggle and upload to GCS datalake."""
     with TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
 
-        patients_path = tmpdir / "patients.csv"
-        services_path = tmpdir / "services_weekly.csv"
+        print(f"Downloading dataset '{KAGGLE_DATASET}' from Kaggle...")
+        download_path = download_from_kaggle(KAGGLE_DATASET, tmpdir)
 
-        print("Downloading patients.csv...")
-        download_csv(PATIENTS_URL, patients_path)
+        patients_path = Path(download_path) / "patients.csv"
+        services_path = Path(download_path) / "services_weekly.csv"
 
-        print("Downloading services_weekly.csv...")
-        download_csv(SERVICES_URL, services_path)
+        if not patients_path.exists():
+            raise FileNotFoundError(f"patients.csv not found in {download_path}")
+        if not services_path.exists():
+            raise FileNotFoundError(f"services_weekly.csv not found in {download_path}")
 
         print(f"Uploading to gs://{gcs_bucket}/{GCS_PREFIX}/...")
         patients_uri = upload_to_gcs(

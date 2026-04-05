@@ -17,6 +17,7 @@ CSV Sources → GCS (Datalake) → BigQuery External Tables → BigQuery Raw →
 - Python >= 3.10
 - dbt-core with dbt-bigquery
 - Prefect >= 2.14.0
+- Kaggle account (free) — for dataset download
 
 ## Setup
 
@@ -41,7 +42,22 @@ terraform plan
 terraform apply
 ```
 
-### 2. Python Environment
+### 2. Kaggle Authentication
+
+The pipeline downloads data from Kaggle using `kagglehub`. You need a Kaggle API token:
+
+1. Go to your Kaggle account settings → **Create New Token**
+2. Download the `kaggle.json` file
+3. Place it at `~/.config/kaggle/kaggle.json` (or `~/.kaggle/kaggle.json`)
+4. Set permissions: `chmod 600 ~/.config/kaggle/kaggle.json`
+
+Alternatively, set environment variables:
+```bash
+export KAGGLE_USERNAME="your-username"
+export KAGGLE_KEY="your-api-key"
+```
+
+### 3. Python Environment
 
 ```bash
 python -m venv .venv
@@ -49,7 +65,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. dbt Setup
+### 4. dbt Setup
 
 ```bash
 cd dbt
@@ -61,7 +77,7 @@ cp profiles.yml.example profiles.yml
 dbt deps
 ```
 
-### 4. Prefect Server
+### 5. Prefect Server
 
 ```bash
 # Start local Prefect server
