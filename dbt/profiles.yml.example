@@ -1,0 +1,13 @@
+hospital:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      keyfile: "/path/to/your/service-account.json"
+      project: "your-gcp-project-id"
+      dataset: staging
+      threads: 4
+      timeout_seconds: 300
+      location: US
+      priority: interactive
