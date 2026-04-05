@@ -9,5 +9,5 @@ hospital:
       dataset: staging
       threads: 4
       timeout_seconds: 300
-      location: US
+      location: "{{ env_var('GCS_LOCATION', 'US') }}"
       priority: interactive
