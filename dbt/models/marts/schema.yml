@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: fct_bed_occupancy
+    description: "Core fact table with weekly service-level occupancy metrics"
+    columns:
+      - name: week
+        tests:
+          - not_null
+      - name: service
+        tests:
+          - not_null
+      - name: occupancy_rate
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+
+  - name: fct_patient_satisfaction
+    description: "Patient-level satisfaction with service capacity correlation"
+    columns:
+      - name: patient_id
+        tests:
+          - unique
+          - not_null
+      - name: satisfaction
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+
+  - name: dim_services
+    description: "Service dimension with aggregate statistics"
+    columns:
+      - name: service
+        tests:
+          - unique
+          - not_null
+      - name: total_admissions
+        tests:
+          - not_negative
+
+  - name: mrt_kpis
+    description: "Executive KPI summary at weekly and monthly grain"
+    columns:
+      - name: period_type
+        tests:
+          - accepted_values:
+              values: ['week', 'month']
+      - name: period_value
+        tests:
+          - not_null
+      - name: total_admissions
+        tests:
+          - not_negative
+      - name: total_refusals
+        tests:
+          - not_negative
