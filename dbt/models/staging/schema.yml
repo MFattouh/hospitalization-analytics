@@ -1,0 +1,58 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('GCP_PROJECT_ID', '') }}"
+    tables:
+      - name: patients
+      - name: services_weekly
+
+models:
+  - name: stg_patients
+    description: "Cleaned patient records with derived fields"
+    columns:
+      - name: patient_id
+        description: "Unique patient identifier"
+        tests:
+          - unique
+          - not_null
+      - name: arrival_date
+        tests:
+          - not_null
+      - name: departure_date
+        tests:
+          - not_null
+      - name: satisfaction
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+      - name: length_of_stay
+        description: "Length of stay in days"
+        tests:
+          - not_negative
+
+  - name: stg_services_weekly
+    description: "Cleaned weekly service metrics with derived rates"
+    columns:
+      - name: week
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 52
+      - name: service
+        tests:
+          - not_null
+      - name: occupancy_rate
+        description: "Ratio of admitted patients to available beds"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: refusal_rate
+        description: "Ratio of refused patients to total requests"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
