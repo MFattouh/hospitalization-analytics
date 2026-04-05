@@ -52,7 +52,7 @@ def ctas_raw_table(
     job = client.query(query)
     job.result()
 
-    print(f"CTAS complete: {dest_table_id} ({job.output_rows} rows)")
+    print(f"CTAS complete: {dest_table_id}")
     return dest_table_id
 
 
