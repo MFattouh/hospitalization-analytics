@@ -9,7 +9,7 @@ from pipelines.ingest_bigquery import ingest_bigquery
 from pipelines.dbt_transform import dbt_transform
 
 GCS_BUCKET = os.getenv("GCS_BUCKET", "hospital-datalake")
-BQ_DATASET_RAW = os.getenv("BQ_DATASET_RAW", "raw")
+BQ_DATASET_RAW = os.getenv("BQ_DATASET_RAW", "hospital_raw")
 DBT_PROJECT_DIR = os.getenv("DBT_PROJECT_DIR", "dbt")
 
 

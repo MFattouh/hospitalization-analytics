@@ -22,17 +22,17 @@ variable "bucket_name" {
 variable "bq_dataset_raw" {
   description = "BigQuery raw dataset name"
   type        = string
-  default     = "raw"
+  default     = "hospital_raw"
 }
 
 variable "bq_dataset_staging" {
   description = "BigQuery staging dataset name"
   type        = string
-  default     = "staging"
+  default     = "hospital_staging"
 }
 
 variable "bq_dataset_marts" {
   description = "BigQuery marts dataset name"
   type        = string
-  default     = "marts"
+  default     = "hospital_marts"
 }

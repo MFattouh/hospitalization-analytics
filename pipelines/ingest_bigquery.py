@@ -6,7 +6,7 @@ from google.cloud import bigquery
 from prefect import flow, task
 
 GCS_BUCKET = os.getenv("GCS_BUCKET", "hospital-datalake")
-BQ_DATASET_RAW = os.getenv("BQ_DATASET_RAW", "raw")
+BQ_DATASET_RAW = os.getenv("BQ_DATASET_RAW", "hospital_raw")
 
 
 @task
