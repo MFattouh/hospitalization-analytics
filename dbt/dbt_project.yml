@@ -18,9 +18,9 @@ models:
   hospital_analytics:
     staging:
       +materialized: view
-      +schema: staging
+      +dataset: staging
       +tags: ["staging"]
     marts:
       +materialized: table
-      +schema: marts
+      +dataset: marts
       +tags: ["marts"]
