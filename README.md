@@ -1,156 +1,113 @@
-# Hospital Bed Operations Dashboard
+# Hospital Bed Operations Dashboard - Complete
 
-An end-to-end data engineering pipeline and executive dashboard for hospital bed occupancy KPIs, built on GCP.
+## What Was Built
 
-## Architecture
+An end-to-end data engineering pipeline and executive dashboard for hospital bed occupancy KPIs, built on GCP with the following components:
 
+### Infrastructure (Terraform)
+
+- GCS bucket for datalake storage
+- Three BigQuery datasets:
+  - `hospital_ingest` (external tables + CTAS raw data)
+  - `hospital_staging` (dbt staging views)
+  - `hospital_marts` (dbt marts tables)
+- IAM configuration for service account access
+
+### Data Pipeline (Prefect)
+
+Three modular DAGs:
+
+1. **ingest_gcs.py** — Downloads hospital dataset from Kaggle → uploads to GCS
+2. **ingest_bigquery.py** — Creates external tables → CTAS into ingest layer
+3. **dbt_transform.py** — Runs dbt deps/run/test for transformations
+4. **master_pipeline.py** — Orchestrates all three stages
+
+### Data Transformation (dbt)
+
+- **Staging Layer**: Cleaned patients & services data with derived fields
+  - `stg_patients`: Adds length_of_stay, arrival_month/quarter, satisfaction_category
+  - `stg_services_weekly`: Adds occupancy_rate, refusal_rate, capacity_category
+- **Marts Layer**: Business-ready analytics tables
+  - `fct_bed_occupancy`: Weekly service-level occupancy metrics
+  - `fct_patient_satisfaction`: Patient-level satisfaction with service correlation
+  - `dim_services`: Service dimension with aggregate statistics
+  - `mrt_kpis`: Executive KPI summary at weekly/monthly grain
+
+### Executive Dashboard (Looker Studio)
+
+Connect to `hospital_marts` dataset to build:
+
+**4 KPI Scorecards:**
+
+- Avg Occupancy Rate (%)
+- Total Admissions (count)
+- Total Refusals (count)
+- Avg Patient Satisfaction (0-100)
+
+**4 Charts:**
+
+1. Weekly Occupancy Rate by Service (line chart)
+2. Bed Demand vs Capacity by Service (grouped bar chart)
+3. Satisfaction vs Occupancy Correlation (scatter plot with trend line)
+4. Refusal Rate & Staff Morale Impact (dual-axis chart)
+
+**3 Filters:**
+
+- Service (dropdown)
+- Month (dropdown)
+- Event Type (dropdown)
+
+## How to Use
+
+### 1. Set Up Environment
+
+```bash
+# Set environment variables
+export GCS_BUCKET="your-hospital-datalake-bucket-name"
+export BQ_DATASET_INGEST="hospital_ingest" 
+export DBT_PROJECT_DIR="dbt"
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account.json"
+export GCP_PROJECT_ID="your-gcp-project-id"
+
+# Set Kaggle credentials for dataset download
+# Option A: Place kaggle.json in ~/.config/kaggle/kaggle.json (chmod 600)
+# Option B: Export env vars
+export KAGGLE_USERNAME="your-kaggle-username"
+export KAGGLE_KEY="your-kaggle-api-key"
 ```
-CSV Sources → GCS (Datalake) → BigQuery External Tables → BigQuery Raw → dbt (Staging → Marts) → Looker Studio
-                                    ↑
-                              Prefect Orchestration
-```
 
-## Prerequisites
-
-- GCP project with a service account (BigQuery Admin, Storage Admin, Compute Admin)
-- Terraform >= 1.5.0
-- Python >= 3.10
-- dbt-core with dbt-bigquery
-- Prefect >= 2.14.0
-- Kaggle account (free) — for dataset download
-
-## Setup
-
-### 1. Terraform
+### 2. Deploy Infrastructure
 
 ```bash
 cd terraform
-
-# Create a tfvars file
-cat > terraform.tfvars <<EOF
-gcp_project_id     = "your-project-id"
-credentials_file   = "/path/to/service-account.json"
-location           = "US"
-bucket_name        = "your-hospital-datalake-bucket"
-bq_dataset_raw     = "raw"
-bq_dataset_staging = "staging"
-bq_dataset_marts   = "marts"
-EOF
-
 terraform init
-terraform plan
-terraform apply
+terraform apply  # Review and confirm
 ```
 
-### 2. Kaggle Authentication
-
-The pipeline downloads data from Kaggle using `kagglehub`. You need a Kaggle API token:
-
-1. Go to your Kaggle account settings → **Create New Token**
-2. Download the `kaggle.json` file
-3. Place it at `~/.config/kaggle/kaggle.json` (or `~/.kaggle/kaggle.json`)
-4. Set permissions: `chmod 600 ~/.config/kaggle/kaggle.json`
-
-Alternatively, set environment variables:
-```bash
-export KAGGLE_USERNAME="your-username"
-export KAGGLE_KEY="your-api-key"
-```
-
-### 3. Python Environment
+### 3. Run the Data Pipeline
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 4. dbt Setup
-
-```bash
-cd dbt
-
-# Copy and edit profiles.yml
-cp profiles.yml.example profiles.yml
-
-# Install dependencies
-dbt deps
-```
-
-### 5. Prefect Server
-
-```bash
-# Start local Prefect server
-prefect server start
-
-# In another terminal, deploy flows
-prefect deployment build pipelines/master_pipeline.py:hospital_data_pipeline --name main -a
-prefect deployment apply master_pipeline-deployment.yaml
-```
-
-## Running the Pipeline
-
-### Full Pipeline
-
-```bash
-export GCS_BUCKET="your-bucket-name"
-export BQ_DATASET_RAW="raw"
-export DBT_PROJECT_DIR="dbt"
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
-export GCP_PROJECT_ID="your-project-id"
-
+# Full pipeline (ingest → BigQuery → dbt)
 python -m pipelines.master_pipeline
+
+# Or run stages individually:
+python -m pipelines.ingest_gcs     # CSVs → GCS
+python -m pipelines.ingest_bigquery  # GCS → BigQuery ingest layer
+python -m pipelines.dbt_transform    # dbt transformations
 ```
 
-### Individual Stages
+### 4. Validate the Data
 
 ```bash
-# Stage 1 only: CSVs → GCS
-python -m pipelines.ingest_gcs
-
-# Stage 2 only: GCS → BigQuery raw
-python -m pipelines.ingest_bigquery
-
-# Stage 3 only: dbt transformations
-python -m pipelines.dbt_transform
+python validate_pipeline.py
+# Checks all datasets, tables, row counts, and data integrity
 ```
 
-### dbt Commands
+### 5. Build the Looker Studio Dashboard
 
-```bash
-cd dbt
-
-# Run all models
-dbt run
-
-# Run staging models only
-dbt run --select staging
-
-# Run tests
-dbt test
-
-# Generate documentation
-dbt docs generate
-dbt docs serve
-```
-
-## Project Structure
-
-```
-├── terraform/          # Infrastructure as Code
-├── pipelines/          # Prefect orchestration flows
-├── dbt/                # dbt transformations
-│   ├── models/
-│   │   ├── staging/    # Cleaned, typed models
-│   │   └── marts/      # Business-ready tables
-│   └── tests/          # Generic dbt tests
-└── requirements.txt    # Python dependencies
-```
-
-## Dashboard
-
-Connect Looker Studio to the `marts` dataset in BigQuery. Build the executive dashboard with:
-
-- **4 KPI Scorecards:** Avg Occupancy Rate, Total Admissions, Total Refusals, Avg Satisfaction
-- **4 Charts:** Weekly Occupancy Trend, Demand vs Capacity, Satisfaction Correlation, Refusal Rate & Staff Morale
-- **3 Filters:** Service, Month, Event Type
+1. Open [Looker Studio](https://lookerstudio.google.com/)
+2. Create → New Report
+3. Add Data Source → BigQuery → Select your project
+4. Select dataset: `hospital_marts`
+5. Add components as specified in `dashboard/looker_studio_spec.md`
+6. Apply filters, style, and share
